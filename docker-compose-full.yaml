@@ -165,6 +165,7 @@ services:
       - kafka-0
       - kafka-1
       - kafka-2
+      - kafka-mirror-0
       - schema-registry
       - postgres
     environment:

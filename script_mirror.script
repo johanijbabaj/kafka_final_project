@@ -1,0 +1,3 @@
+curl -X PUT -H "Content-Type: application/json" --data '{"name": "mirror2", "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", "source.cluster.alias": "source", "topics": "test_topic", "source.cluster.bootstrap.servers": "kafka-0:9092", "target.cluster.bootstrap.servers": "kafka-mirror-0:19092", "producer.override.bootstrap.servers": "kafka-mirror-0:19092", "offset-syncs.topic.replication.factor": "1"}' http://localhost:8083/connectors/mirror2/config
+
+curl http://localhost:8083/connectors/mirror2/status  
