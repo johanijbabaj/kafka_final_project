@@ -1,0 +1,37 @@
+{
+  "product_id": "98765",
+  "name": "Беспроводные наушники Sony WH-1000XM5",
+  "description": "Беспроводные наушники с шумоподавлением и высоким качеством звука.",
+  "price": {
+    "amount": 34990.00,
+    "currency": "RUB"
+  },
+  "category": "Аудио",
+  "brand": "Sony",
+  "stock": {
+    "available": 80,
+    "reserved": 5
+  },
+  "sku": "SNY-98765",
+  "tags": ["наушники", "беспроводные", "аудио"],
+  "images": [
+    {
+      "url": "https://example.com/images/product4.jpg",
+      "alt": "Беспроводные наушники Sony WH-1000XM5 - вид спереди"
+    },
+    {
+      "url": "https://example.com/images/product4_side.jpg",
+      "alt": "Беспроводные наушники Sony WH-1000XM5 - вид сбоку"
+    }
+  ],
+  "specifications": {
+    "weight": "250g",
+    "dimensions": "180mm x 160mm x 80mm",
+    "battery_life": "30 hours",
+    "connectivity": "Bluetooth 5.2"
+  },
+  "created_at": "2023-11-01T14:00:00Z",
+  "updated_at": "2023-11-05T17:30:00Z",
+  "index": "products",
+  "store_id": "store_004"
+}

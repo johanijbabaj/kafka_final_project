@@ -1,0 +1,37 @@
+{
+    "product_id": "13579",
+    "name": "Умные часы Samsung Galaxy Watch",
+    "description": "Умные часы с множеством функций для здоровья и фитнеса.",
+    "price": {
+      "amount": 29999.99,
+      "currency": "RUB"
+    },
+    "category": "Электроника",
+    "brand": "Samsung",
+    "stock": {
+      "available": 100,
+      "reserved": 15
+    },
+    "sku": "SMS-13579",
+    "tags": ["умные часы", "гаджеты", "спорт"],
+    "images": [
+      {
+        "url": "https://example.com/images/product3.jpg",
+        "alt": "Умные часы Samsung Galaxy Watch - вид спереди"
+      },
+      {
+        "url": "https://example.com/images/product3_side.jpg",
+        "alt": "Умные часы Samsung Galaxy Watch - вид сбоку"
+      }
+    ],
+    "specifications": {
+      "weight": "60g",
+      "dimensions": "44mm x 44mm x 11mm",
+      "battery_life": "48 hours",
+      "water_resistance": "IP68"
+    },
+    "created_at": "2023-10-22T11:00:00Z",
+    "updated_at": "2023-10-25T16:30:00Z",
+    "index": "products",
+    "store_id": "store_003"
+  }

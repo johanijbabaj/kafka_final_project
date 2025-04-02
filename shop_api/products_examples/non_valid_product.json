@@ -1,0 +1,37 @@
+{
+    "product_id": "67890",
+    "name": "Смартфон телефон Apple Pro Max",
+    "description": "Новейший смартфон с мощным процессором и камерой высокого разрешения.",
+    "price": {
+      "amount": 129999.99,
+      "currency": "RUB"
+    },
+    "category": "Электроника",
+    "brand": "Apple",
+    "stock": {
+      "available": 50,
+      "reserved": 10
+    },
+    "sku": "APL-67890",
+    "tags": ["смартфон", "телефон", "технологии"],
+    "images": [
+      {
+        "url": "https://example.com/images/product2.jpg",
+        "alt": "Смартфон Apple Pro Max - вид спереди"
+      },
+      {
+        "url": "https://example.com/images/product2_side.jpg",
+        "alt": "Смартфон Apple Pro Max - вид сбоку"
+      }
+    ],
+    "specifications": {
+      "weight": "200g",
+      "dimensions": "160mm x 78mm x 8mm",
+      "battery_life": "36 hours",
+      "water_resistance": "IP68"
+    },
+    "created_at": "2023-10-15T10:00:00Z",
+    "updated_at": "2023-10-20T14:30:00Z",
+    "index": "products",
+    "store_id": "store_002"
+  }
