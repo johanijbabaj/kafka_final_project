@@ -1,0 +1,6 @@
+{
+  "field": "brand",
+  "operator": "contains",
+  "value": "Apple",
+  "currency": null
+}

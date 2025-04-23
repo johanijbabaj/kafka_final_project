@@ -1,0 +1,6 @@
+{
+  "field": "price",
+  "operator": ">",
+  "value": "100",
+  "currency": "USD"
+}
