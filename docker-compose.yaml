@@ -1,0 +1,475 @@
+services:
+
+  x-kafka-common:
+    &kafka-common
+    image: bitnami/kafka:3.7
+    environment:
+      &kafka-common-env
+      KAFKA_ENABLE_KRAFT: yes
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_KRAFT_CLUSTER_ID: practicum
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+    networks:
+      - proxynet
+  
+  x-kafka-mirror-common:
+    &kafka-mirror-common
+    image: bitnami/kafka:3.7
+    environment:
+      &kafka-mirror-common-env
+      KAFKA_ENABLE_KRAFT: yes
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_KRAFT_CLUSTER_ID: practicum_mirror
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka-mirror-0:19093,1@kafka-mirror-1:19093,2@kafka-mirror-2:19093
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+    networks:
+      - proxynet
+
+  postgres:
+    image: debezium/postgres:16
+    hostname: postgres
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres-user
+      POSTGRES_PASSWORD: postgres-pw
+      POSTGRES_DB: customers
+    volumes:
+      - ./postgres/custom-config.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - proxynet
+
+  kafka-0:
+    <<: *kafka-common
+    restart: always
+    ports:
+      - "127.0.0.1:9094:9094"
+    environment:
+      <<: *kafka-common-env
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_JMX_PORT: 9990
+      KAFKA_JMX_OPTS: >
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=9990
+        -Dcom.sun.management.jmxremote.rmi.port=9980
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=kafka-0
+        -Djava.net.preferIPv4Stack=true
+        -Djava.management.rmi.local.only=false
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-0:9092,EXTERNAL://127.0.0.1:9094
+    volumes:
+      - kafka_0_data:/bitnami/kafka
+
+  kafka-1:
+    <<: *kafka-common
+    restart: always
+    ports:
+      - "127.0.0.1:9095:9095"
+    environment:
+      <<: *kafka-common-env
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_JMX_PORT: 9991
+      KAFKA_JMX_OPTS: >
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=9991
+        -Dcom.sun.management.jmxremote.rmi.port=9981
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=kafka-1
+        -Djava.net.preferIPv4Stack=true
+        -Djava.management.rmi.local.only=false
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9095
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://127.0.0.1:9095
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+
+  kafka-2:
+    <<: *kafka-common
+    restart: always
+    ports:
+      - "127.0.0.1:9096:9096"
+    environment:
+      <<: *kafka-common-env
+      KAFKA_CFG_NODE_ID: 2
+      KAFKA_JMX_PORT: 9992
+      KAFKA_JMX_OPTS: >
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=9992
+        -Dcom.sun.management.jmxremote.rmi.port=9982
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=kafka-2
+        -Djava.net.preferIPv4Stack=true
+        -Djava.management.rmi.local.only=false
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9096
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,EXTERNAL://127.0.0.1:9096
+    volumes:
+      - kafka_2_data:/bitnami/kafka
+
+  kafka-mirror-0:
+    <<: *kafka-mirror-common
+    restart: always
+    ports:
+      - "127.0.0.1:19094:19094"
+    environment:
+      <<: *kafka-mirror-common-env
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:19093,EXTERNAL://:19094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-mirror-0:19092,EXTERNAL://127.0.0.1:19094
+    volumes:
+      - kafka_mirror_0_data:/bitnami/kafka
+
+  kafka-mirror-1:
+    <<: *kafka-mirror-common
+    restart: always
+    ports:
+      - "127.0.0.1:19095:19095"
+    environment:
+      <<: *kafka-mirror-common-env
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:19093,EXTERNAL://:19095
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-mirror-1:19092,EXTERNAL://127.0.0.1:19095
+    volumes:
+      - kafka_mirror_1_data:/bitnami/kafka
+
+  kafka-mirror-2:
+    <<: *kafka-mirror-common
+    restart: always
+    ports:
+      - "127.0.0.1:19096:19096"
+    environment:
+      <<: *kafka-mirror-common-env
+      KAFKA_CFG_NODE_ID: 2
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:19093,EXTERNAL://:19096
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-mirror-2:19092,EXTERNAL://127.0.0.1:19096
+    volumes:
+      - kafka_mirror_2_data:/bitnami/kafka
+
+  schema-registry:
+    image: bitnami/schema-registry:7.6
+    ports:
+      - '8081:8081'
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    environment:
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKA_BROKERS: PLAINTEXT://kafka-0:9092,PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092
+    networks:
+      - proxynet
+
+  ui:
+    image: provectuslabs/kafka-ui:v0.7.0
+    restart: always
+    ports:
+      - "127.0.0.1:8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka-0:9092
+      KAFKA_CLUSTERS_0_NAME: kraft
+      KAFKA_CLUSTERS_1_BOOTSTRAP_SERVERS: kafka-mirror-0:19092
+      KAFKA_CLUSTERS_1_NAME: kraft-mirror
+      cdSQLDBSERVER: http://ksqldb:8088
+    networks:
+      - proxynet
+
+  kafka-connect:
+    build:
+      context: ./kafka-connect
+    ports:
+      - "8083:8083"
+      - "9875:9875"
+      - "9876:9876"
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+      - kafka-mirror-0
+      - schema-registry
+      - postgres
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka-0:9092
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: 'kafka-connect'
+
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
+
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+
+      CONNECT_CONFIG_STORAGE_TOPIC: 'connect-config-storage'
+      CONNECT_OFFSET_STORAGE_TOPIC: 'connect-offset-storage'
+      CONNECT_STATUS_STORAGE_TOPIC: 'connect-status-storage'
+
+      CONNECT_KEY_CONVERTER: "io.confluent.connect.avro.AvroConverter"
+      CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081/'
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL:  'http://schema-registry:8081/'
+      # Export JMX metrics to :9876/metrics for Prometheus
+      KAFKA_JMX_PORT: '9875'
+      KAFKA_OPTS: "-javaagent:/opt/jmx_prometheus_javaagent-0.15.0.jar=9876:/opt/kafka-connect.yml"
+      # Read connection password from file
+      CONNECT_CONFIG_PROVIDERS: "file"
+      CONNECT_CONFIG_PROVIDERS_FILE_CLASS: "org.apache.kafka.common.config.provider.FileConfigProvider"
+
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
+    volumes:
+      - ./confluent-hub-components/:/etc/kafka-connect/jars
+    networks:
+      - proxynet
+
+  grafana:
+    image: "grafana/grafana:${GRAFANA_VERSION}"
+    restart: unless-stopped
+    ports:
+     - "3001:3000"
+    environment:
+      GF_PATHS_DATA : /var/lib/grafana
+      GF_SECURITY_ADMIN_PASSWORD : kafka
+    volumes:
+     - ./grafana/provisioning:/etc/grafana/provisioning
+     - ./grafana/dashboards:/var/lib/grafana/dashboards
+    container_name: grafana
+    depends_on:
+     - prometheus
+    networks:
+      - proxynet
+
+  prometheus:
+    image: "prom/prometheus:${PROMETHEUS_VERSION}"
+    restart: unless-stopped
+    ports:
+     - "9090:9090"
+    volumes:
+     - ./etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+     - ./etc/prometheus/alert.rules:/etc/prometheus/alert.rules
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    container_name: prometheus
+    networks:
+      - proxynet
+
+  alertmanager:
+    image: prom/alertmanager:v0.21.0
+    restart: unless-stopped
+    container_name: alertmanager
+    volumes:
+      - ./etc/alertmanager/config.yml:/etc/alertmanager/config.yml
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+      - '--log.level=debug'
+    ports:
+      - 9098:9093
+    networks:
+      - proxynet
+
+
+  jmx-kafka100:
+    image: "sscaling/jmx-prometheus-exporter"
+    restart: unless-stopped
+    ports:
+     - "5556:5556"
+    environment:
+     CONFIG_YML : "/etc/jmx_exporter/config.yml"
+     JVM_OPTS: ${PROMETHEUS_JMX_AGENT_JVM_OPTS}
+    volumes:
+     - ./etc/jmx_exporter/config_kafka100.yml:/etc/jmx_exporter/config.yml
+    container_name: jmx-kafka100
+    depends_on:
+     - kafka-0
+    networks:
+      - proxynet
+
+  jmx-kafka101:
+    image: "sscaling/jmx-prometheus-exporter"
+    restart: unless-stopped
+    ports:
+     - "5557:5556"
+    environment:
+     CONFIG_YML : "/etc/jmx_exporter/config.yml"
+     JVM_OPTS: ${PROMETHEUS_JMX_AGENT_JVM_OPTS}
+
+    volumes:
+     - ./etc/jmx_exporter/config_kafka101.yml:/etc/jmx_exporter/config.yml
+    container_name: jmx-kafka101
+    depends_on:
+     - kafka-1
+    networks:
+      - proxynet
+
+  jmx-kafka102:
+    image: "sscaling/jmx-prometheus-exporter"
+    restart: unless-stopped
+    ports:
+     - "5558:5556"
+    environment:
+     CONFIG_YML : "/etc/jmx_exporter/config.yml"
+     JVM_OPTS: ${PROMETHEUS_JMX_AGENT_JVM_OPTS}
+    volumes:
+     - ./etc/jmx_exporter/config_kafka102.yml:/etc/jmx_exporter/config.yml
+    container_name: jmx-kafka102
+    depends_on:
+     - kafka-2
+    networks:
+      - proxynet
+
+  # prometheus:
+  #   image: prom/prometheus:v2.30.3
+  #   ports:
+  #     - 9090:9090
+  #   volumes:
+  #     - ./prometheus:/etc/prometheus
+  #   command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
+  #   links:
+  #     - kafka-connect
+  #   networks:
+  #     - proxynet
+
+  # grafana:
+  #   build:
+  #     context: ./grafana
+  #   ports:
+  #     - 3000:3000
+  #   networks:
+  #     - proxynet
+
+  debezium-ui:
+    image: quay.io/debezium/debezium-ui
+    container_name: debezium-ui
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - kafka-connect
+    environment:
+      KAFKA_CONNECT_URIS: "http://kafka-connect:8083"
+    networks:
+      - proxynet
+
+  kafka_prometheus_connector:
+    build:
+      context: ./kafka_prometheus_connector
+    container_name: kafka_prometheus_connector
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    ports:
+      - "8000:8000"
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-0:9092
+      - KAFKA_TOPIC=metrics_topic  # Topic name
+      - KAFKA_GROUP_ID=prometheus-consumer  # Consumer group id
+      - KAFKA_AUTO_OFFSET_RESET=earliest  # Offset reset strategy
+    networks:
+      - proxynet
+
+  faust-app:
+    build:
+      context: .
+      dockerfile: faust_app/Dockerfile
+    container_name: faust-app
+    depends_on:
+      - kafka-0
+    networks:
+      - proxynet
+
+  spark-master:
+    image: bitnami/spark:3.5.4
+    container_name: spark-master
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    environment:
+      SPARK_MODE: master
+    networks:
+      - proxynet
+
+  spark-worker:
+    image: bitnami/spark:3.5.4
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    ports:
+      - "8087:8081"
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 3G # Или другое значение
+      SPARK_WORKER_CORES: 16 # Или другое значение
+
+    networks:
+      - proxynet
+
+  namenode:
+    #image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    build: 
+      context: ./hadoop
+    container_name: namenode
+    environment:
+      CLUSTER_NAME: "hadoop-cluster"
+    ports:
+      - "9870:9870" # HDFS Web UI
+      - "8020:8020"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    networks:
+      - proxynet
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    environment:
+      SERVICE_PRECONDITION: "namenode:8020" 
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864" # DataNode Web UI
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+      - ./hadoop/core-site.xml:/etc/hadoop/core-site.xml
+    networks:
+      - proxynet
+
+  spark-app:
+    build:
+      context: .
+      dockerfile: spark_app/Dockerfile
+    depends_on:
+      - spark-master
+      - kafka-mirror-0
+    volumes:
+      - ./spark_app/kafka_to_hdfs.py:/app/kafka_to_hdfs.py
+    networks:
+      - proxynet
+
+
+networks:
+  proxynet:
+    name: custom_network
+
+volumes:
+  kafka_0_data:
+  kafka_1_data:
+  kafka_2_data:
+  kafka_mirror_0_data:
+  kafka_mirror_1_data:
+  kafka_mirror_2_data:
+  hadoop_namenode:
+  hadoop_datanode:
+
