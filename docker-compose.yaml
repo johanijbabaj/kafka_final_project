@@ -184,6 +184,32 @@ services:
     networks:
       - proxynet
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+    platform: linux/amd64
+    container_name: elasticsearch-8.15.1
+    environment:
+      - node.name=elasticsearch
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - ./elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - proxynet
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.1
+    container_name: kibana-8.15.1
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+    networks:
+      - proxynet
   kafka-connect:
     build:
       context: ./kafka-connect
@@ -198,6 +224,7 @@ services:
       - kafka-mirror-0
       - schema-registry
       - postgres
+      - elasticsearch
     environment:
       CONNECT_BOOTSTRAP_SERVERS: kafka-0:9092
       CONNECT_REST_PORT: 8083
@@ -227,7 +254,8 @@ services:
       CONNECT_CONFIG_PROVIDERS: "file"
       CONNECT_CONFIG_PROVIDERS_FILE_CLASS: "org.apache.kafka.common.config.provider.FileConfigProvider"
 
-      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
+      # CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars,/usr/share/confluent-hub-components
     volumes:
       - ./confluent-hub-components/:/etc/kafka-connect/jars
     networks:
@@ -455,6 +483,17 @@ services:
       - kafka-mirror-0
     volumes:
       - ./spark_app/kafka_to_hdfs.py:/app/kafka_to_hdfs.py
+    networks:
+      - proxynet
+
+  fastapi:
+    build:
+      context: ./client_api
+    ports:
+      - "8001:8001"
+    depends_on:
+      - kafka-0
+      - elasticsearch
     networks:
       - proxynet
 

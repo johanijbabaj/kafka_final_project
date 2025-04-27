@@ -5,10 +5,10 @@ from config import PRODUCT_TOPIC, FILTERED_PRODUCT_TOPIC, BAN_RULES_TOPIC
 from models import BanRule
 import faust
 
-# Подтягиваем только одну основную схему
+# Main schema
 products_serializer = FaustAvroSerializer('products-value')
 
-# filtered_products будет использовать схему от products
+# filtered_products uses the same schema as products
 filtered_products_serializer = FaustAvroSerializer('filtered_products-value', schema_source_subject='products-value')
 
 # Faust schemas

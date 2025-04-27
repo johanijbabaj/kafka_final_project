@@ -54,7 +54,7 @@ def generate_random_product(block_chance=0.3):
         "store_id": store_id,
     }
 
-def generate_products(num_products, block_chance=0.1):
+def generate_products(num_products, block_chance=0.2):
     """
     Generates a list of random products.
     """
