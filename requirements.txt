@@ -1,0 +1,11 @@
+kafka-python
+pyspark
+confluent_kafka
+urllib3
+requests
+avro
+httpx
+attrs
+cachetools
+authlib
+fastavro

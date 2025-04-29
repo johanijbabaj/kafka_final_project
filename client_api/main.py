@@ -1,19 +1,24 @@
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from elasticsearch import Elasticsearch
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 from typing import Optional
 import json
 import uuid
 
 app = FastAPI()
 
+KAFKA_BOOTSTRAP_SERVERS = "kafka-0:9092"
+RECOMMENDATIONS_TOPIC = "client_recommendations"
+PRODUCT_SEARCH_TOPIC = "product_search_topic"
+
 # Elasticsearch setup
 es = Elasticsearch(["http://elasticsearch:9200"])
 
 # Kafka setup
 producer = KafkaProducer(
-    bootstrap_servers=["kafka-0:9092"],
+    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+    key_serializer=lambda k: str(k).encode('utf-8'),
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
@@ -24,7 +29,8 @@ class ProductSearchRequest(BaseModel):
 
 # Endpoint to search for product by name
 @app.post("/search_product/")
-async def search_product(request: ProductSearchRequest,
+async def search_product(
+        request: ProductSearchRequest,
         brand: Optional[str] = None,
         currency: Optional[str] = None,
         min_price: Optional[float] = None,
@@ -76,9 +82,13 @@ async def search_product(request: ProductSearchRequest,
 
     # Send product search event to Kafka for analysis
     producer.send(
-        "product_search_topic",
-        key=str(request.client_id).encode('utf-8'),
-        value={"client_id": str(request.client_id), "product_name": request.name}
+        PRODUCT_SEARCH_TOPIC,
+        key=request.client_id,
+        value={
+            "client_id": str(request.client_id),
+            "product_name": request.name,
+            "results": all_results
+        }
     )
 
     return all_results
@@ -87,13 +97,31 @@ async def search_product(request: ProductSearchRequest,
 # Endpoint to get personalized recommendations
 @app.get("/recommendations/")
 async def get_recommendations(client_id: uuid.UUID = Query(...)):
-    # This is a placeholder for personalized recommendations
-    recommendations = [
-        {"product_id": 1, "name": "Product 1", "price": 100},
-        {"product_id": 2, "name": "Product 2", "price": 200},
-    ]
+    client_id_str = str(client_id)
 
-    # Send recommendation event to Kafka for analysis
-    producer.send("recommendations_topic", value={"client_id": str(client_id), "recommendations": recommendations})
+    consumer = KafkaConsumer(
+        RECOMMENDATIONS_TOPIC,
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        enable_auto_commit=False,
+        auto_offset_reset='earliest',
+        group_id='test',
+        value_deserializer=lambda v: json.loads(v.decode('utf-8')),
+        key_deserializer=lambda k: k.decode('utf-8') if k else None
+    )
 
-    return recommendations
+    latest_message = None
+
+    try:
+        for message in consumer.poll(timeout_ms=5000, max_records=10).values():
+            for record in message:
+                latest_message = record.key
+                if record.key == client_id_str:
+                    latest_message = {"recommendation": record.value}
+
+    finally:
+        consumer.close()
+
+    if latest_message:
+        return latest_message
+    else:
+        return {"detail": f"No recommendation found for client_id {client_id}"}

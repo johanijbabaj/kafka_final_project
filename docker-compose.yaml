@@ -32,27 +32,13 @@ services:
     networks:
       - proxynet
 
-  postgres:
-    image: debezium/postgres:16
-    hostname: postgres
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres-user
-      POSTGRES_PASSWORD: postgres-pw
-      POSTGRES_DB: customers
-    volumes:
-      - ./postgres/custom-config.conf:/etc/postgresql/postgresql.conf
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
-    networks:
-      - proxynet
-
   kafka-0:
     <<: *kafka-common
     restart: always
     ports:
       - "127.0.0.1:9094:9094"
+      - "127.0.0.1:9980:9980"
+      - "127.0.0.1:9990:9990"
     environment:
       <<: *kafka-common-env
       KAFKA_CFG_NODE_ID: 0
@@ -223,7 +209,6 @@ services:
       - kafka-2
       - kafka-mirror-0
       - schema-registry
-      - postgres
       - elasticsearch
     environment:
       CONNECT_BOOTSTRAP_SERVERS: kafka-0:9092
@@ -356,57 +341,6 @@ services:
     networks:
       - proxynet
 
-  # prometheus:
-  #   image: prom/prometheus:v2.30.3
-  #   ports:
-  #     - 9090:9090
-  #   volumes:
-  #     - ./prometheus:/etc/prometheus
-  #   command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
-  #   links:
-  #     - kafka-connect
-  #   networks:
-  #     - proxynet
-
-  # grafana:
-  #   build:
-  #     context: ./grafana
-  #   ports:
-  #     - 3000:3000
-  #   networks:
-  #     - proxynet
-
-  debezium-ui:
-    image: quay.io/debezium/debezium-ui
-    container_name: debezium-ui
-    platform: linux/amd64
-    ports:
-      - "127.0.0.1:8080:8080"
-    depends_on:
-      - kafka-connect
-    environment:
-      KAFKA_CONNECT_URIS: "http://kafka-connect:8083"
-    networks:
-      - proxynet
-
-  kafka_prometheus_connector:
-    build:
-      context: ./kafka_prometheus_connector
-    container_name: kafka_prometheus_connector
-    depends_on:
-      - kafka-0
-      - kafka-1
-      - kafka-2
-    ports:
-      - "8000:8000"
-    environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka-0:9092
-      - KAFKA_TOPIC=metrics_topic  # Topic name
-      - KAFKA_GROUP_ID=prometheus-consumer  # Consumer group id
-      - KAFKA_AUTO_OFFSET_RESET=earliest  # Offset reset strategy
-    networks:
-      - proxynet
-
   faust-app:
     build:
       context: .
@@ -445,7 +379,6 @@ services:
       - proxynet
 
   namenode:
-    #image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     build: 
       context: ./hadoop
     container_name: namenode
@@ -474,7 +407,7 @@ services:
     networks:
       - proxynet
 
-  spark-app:
+  spark-app-kafka-to-hdfs:
     build:
       context: .
       dockerfile: spark_app/Dockerfile
@@ -485,10 +418,35 @@ services:
       - ./spark_app/kafka_to_hdfs.py:/app/kafka_to_hdfs.py
     networks:
       - proxynet
+    command: >
+      spark-submit
+      --master spark://spark-master:7077
+      --executor-cores 8
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4
+      /app/kafka_to_hdfs.py
+
+  spark-app-client-recommendations:
+    build:
+      context: .
+      dockerfile: spark_app/Dockerfile
+    depends_on:
+      - spark-master
+      - kafka-mirror-0
+    volumes:
+      - ./spark_app/client_recommendations.py:/app/client_recommendations.py
+    networks:
+      - proxynet
+    command: >
+      spark-submit
+      --master spark://spark-master:7077
+      --executor-cores 8
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4
+      /app/client_recommendations.py
 
   fastapi:
     build:
-      context: ./client_api
+      context: .
+      dockerfile: client_api/Dockerfile
     ports:
       - "8001:8001"
     depends_on:

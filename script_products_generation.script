@@ -1,0 +1,1 @@
+python shop_api/send_product.py --generate 30

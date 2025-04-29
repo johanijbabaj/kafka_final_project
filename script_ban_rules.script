@@ -1,0 +1,2 @@
+docker exec faust-app python add_ban_rule.py rules/brand_rule_example.json
+docker exec faust-app python add_ban_rule.py rules/price_rule_example.json

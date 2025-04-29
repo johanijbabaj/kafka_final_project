@@ -1,0 +1,4 @@
+docker exec -it kafka_final_project-kafka-0-1 kafka-topics.sh --create --topic ban_rules --bootstrap-server kafka-0:9092 --partitions 3 --replication-factor 2
+docker exec -it kafka_final_project-kafka-0-1 kafka-topics.sh --create --topic filtered_products --bootstrap-server kafka-0:9092 --partitions 3 --replication-factor 2
+docker exec -it kafka_final_project-kafka-0-1 kafka-topics.sh --create --topic product_search_topic --bootstrap-server kafka-0:9092 --partitions 3 --replication-factor 2
+docker exec -it kafka_final_project-kafka-0-1 kafka-topics.sh --create --topic client_recommendations --bootstrap-server kafka-mirror-0:19092 --partitions 3 --replication-factor 2

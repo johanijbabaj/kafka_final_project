@@ -1,0 +1,34 @@
+openssl req -new -x509 -keyout ca-key -out ca-cert -days 365 -subj "/CN=Kafka-CA"
+
+# main cluster certificates
+for i in 0 1 2; do
+  keytool -genkey -keystore kafka-replica-$i.keystore.jks -alias kafka-replica-$i -validity 365 \
+          -keyalg RSA -storepass changeit -keypass changeit \
+          -dname "CN=kafka-replica-$i" -ext SAN=dns:kafka-replica-$i,dns:localhost
+  keytool -certreq -keystore kafka-replica-$i.keystore.jks -alias kafka-replica-$i -storepass changeit -file kafka-replica-$i.csr
+  openssl x509 -req -CA ca-cert -CAkey ca-key -in kafka-replica-$i.csr -out kafka-replica-$i-cert -days 365 -CAcreateserial
+  keytool -import -keystore kafka-replica-$i.keystore.jks -alias CARoot -file ca-cert -storepass changeit -noprompt
+  keytool -import -keystore kafka-replica-$i.keystore.jks -alias kafka-replica-$i -file kafka-replica-$i-cert -storepass changeit -noprompt
+  keytool -import -keystore kafka-replica-$i.truststore.jks -alias CARoot -file ca-cert -storepass changeit -noprompt
+done
+
+keytool -genkey -keystore client.keystore.jks -alias client -validity 365 \
+        -keyalg RSA -storepass changeit -keypass changeit \
+        -dname "CN=Kafka-Client"
+keytool -certreq -keystore client.keystore.jks -alias client -storepass changeit -file client.csr
+openssl x509 -req -CA ca-cert -CAkey ca-key -in client.csr -out client-cert -days 365 -CAcreateserial
+keytool -import -keystore client.keystore.jks -alias CARoot -file ca-cert -storepass changeit -noprompt
+keytool -import -keystore client.keystore.jks -alias client -file client-cert -storepass changeit -noprompt
+keytool -import -keystore client.truststore.jks -alias CARoot -file ca-cert -storepass changeit -noprompt
+
+# replica certificates
+for i in 0 1 2; do
+  keytool -genkey -keystore kafka-replica-$i.keystore.jks -alias kafka-replica-$i -validity 365 \
+          -keyalg RSA -storepass changeit -keypass changeit \
+          -dname "CN=kafka-replica-$i" -ext SAN=dns:kafka-replica-$i,dns:localhost
+  keytool -certreq -keystore kafka-replica-$i.keystore.jks -alias kafka-replica-$i -storepass changeit -file kafka-replica-$i.csr
+  openssl x509 -req -CA ca-cert -CAkey ca-key -in kafka-replica-$i.csr -out kafka-replica-$i-cert -days 365 -CAcreateserial
+  keytool -import -keystore kafka-replica-$i.keystore.jks -alias CARoot -file ca-cert -storepass changeit -noprompt
+  keytool -import -keystore kafka-replica-$i.keystore.jks -alias kafka-replica-$i -file kafka-replica-$i-cert -storepass changeit -noprompt
+  keytool -import -keystore kafka-replica-$i.truststore.jks -alias CARoot -file ca-cert -storepass changeit -noprompt
+done
